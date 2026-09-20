@@ -1,0 +1,14 @@
+name = "next-leg-site"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+# The whole marketing site is served straight from the edge as static assets;
+# the Worker only runs for /api/* and for the couple of redirects.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+not_found_handling = "404-page"
+run_worker_first = ["/api/*"]
+
+# GHL_WEBHOOK_URL is a secret, not a var:
+#   npx wrangler secret put GHL_WEBHOOK_URL
