@@ -1,14 +1,11 @@
-name = "next-leg-site"
-main = "src/index.js"
+# Cloudflare Pages project.
+# Pages serves everything in public/ from the edge and runs functions/api/lead.js
+# for POST /api/lead. Declaring the output directory here means there is nothing
+# to configure in the dashboard.
+
+name = "jet-cleaning"
 compatibility_date = "2026-09-01"
+pages_build_output_dir = "public"
 
-# The whole marketing site is served straight from the edge as static assets;
-# the Worker only runs for /api/* and for the couple of redirects.
-[assets]
-directory = "./public"
-binding = "ASSETS"
-not_found_handling = "404-page"
-run_worker_first = ["/api/*"]
-
-# GHL_WEBHOOK_URL is a secret, not a var:
-#   npx wrangler secret put GHL_WEBHOOK_URL
+# GHL_WEBHOOK_URL is a secret, not a var. Set it in:
+# Workers & Pages > jet-cleaning > Settings > Variables and Secrets
