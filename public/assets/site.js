@@ -247,7 +247,7 @@
       li0.innerHTML = "<span>Pick at least one service</span><span></span>";
       list.appendChild(li0);
     }
-    lines.forEach(function (l) {
+    lines.forEach(function (l, i) {
       var li = document.createElement("li");
       var a = document.createElement("span");
       var b = document.createElement("span");
@@ -255,7 +255,19 @@
       b.textContent = l[1] === null ? "quote" : fmt(l[1]);
       li.appendChild(a);
       li.appendChild(b);
+      li.className = "is-new";
+      li.style.transitionDelay = Math.min(i, 6) * 32 + "ms";
       list.appendChild(li);
+    });
+    // Two frames: one to let the browser see the start state, one to leave it.
+    // Setting both in the same frame means no transition at all.
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        Array.prototype.forEach.call(list.children, function (li) {
+          li.classList.remove("is-new");
+          li.classList.add("is-settled");
+        });
+      });
     });
 
     setTotal(total, manual && total > 0 ? " +" : "");
@@ -279,6 +291,50 @@
   estimate();
 
   // ---------- send
+  // ---- validation that speaks up where the problem is, after you leave
+  // the field, and shuts up the moment you start fixing it.
+  var RULES = {
+    "f-name":  { test: function (v) { return v.trim().length > 1; }, msg: "We need a name to put on the job card." },
+    "f-email": { test: function (v) { return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.trim()); }, msg: "That email does not look right." },
+    "f-phone": { test: function (v) { return v.replace(/\D/g, "").length >= 10; }, msg: "Ten digits, so we can call about the tail time." }
+  };
+  function fieldOf(el) { return el.closest ? el.closest(".field") : null; }
+  function setBad(el, bad, msg) {
+    var f = fieldOf(el);
+    if (!f) return;
+    f.classList.toggle("is-bad", !!bad);
+    el.setAttribute("aria-invalid", bad ? "true" : "false");
+    var p = f.querySelector(".fielderr");
+    if (bad) {
+      if (!p) {
+        p = document.createElement("p");
+        p.className = "fielderr";
+        p.id = el.id + "-err";
+        f.appendChild(p);
+      }
+      p.textContent = msg;
+      el.setAttribute("aria-describedby", p.id);
+    } else if (p) {
+      el.removeAttribute("aria-describedby");
+    }
+  }
+  function check(id) {
+    var el = $(id), rule = RULES[id];
+    if (!el || !rule) return true;
+    var good = rule.test(el.value);
+    setBad(el, !good, rule.msg);
+    return good;
+  }
+  Object.keys(RULES).forEach(function (id) {
+    var el = $(id);
+    if (!el) return;
+    el.addEventListener("blur", function () { if (el.value.trim()) check(id); });
+    el.addEventListener("input", function () {
+      var f = fieldOf(el);
+      if (f && f.classList.contains("is-bad")) check(id);
+    });
+  });
+
   form.addEventListener("submit", function (e) {
     e.preventDefault();
     var status = $("f-status");
@@ -286,9 +342,13 @@
     var name = $("f-name").value.trim();
     var email = $("f-email").value.trim();
     var phone = $("f-phone").value.trim();
-    if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || phone.replace(/\D/g, "").length < 10) {
+    var bad = ["f-name", "f-email", "f-phone"].filter(function (id) { return !check(id); });
+    if (bad.length) {
       status.className = "formstatus err";
-      status.textContent = "Add your name, a valid email and a 10-digit phone number, then send again.";
+      status.textContent = "Three things are missing or wrong below. They are marked.";
+      var first = $(bad[0]);
+      if (bad.length === 1) status.textContent = "One thing needs fixing below. It is marked.";
+      if (first && first.focus) { first.focus(); first.scrollIntoView({ block: "center", behavior: slow ? "auto" : "smooth" }); }
       return;
     }
     var est = estimate();
@@ -313,16 +373,24 @@
       source: "Website instant estimate",
       page: String(window.location.href).slice(0, 300)
     };
-    btn.disabled = true;
+    // The button carries the state so the person is not reading a sentence
+    // somewhere else to find out whether anything happened.
+    var setState = function (state) {
+      btn.classList.remove("is-busy", "is-done");
+      if (state) btn.classList.add(state);
+      btn.disabled = state === "is-busy";
+    };
+    setState("is-busy");
     status.className = "formstatus";
-    status.textContent = "Sending...";
+    status.textContent = "";
 
     if (DEMO) {
       setTimeout(function () {
+        setState("is-done");
         status.className = "formstatus ok";
         status.textContent = "Preview only: on the live site this request goes straight into your GoHighLevel pipeline.";
-        btn.disabled = false;
-      }, 400);
+        setTimeout(function () { setState(null); }, 2600);
+      }, 700);
       return;
     }
 
@@ -330,14 +398,16 @@
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok && j.ok, j: j }; }); })
       .then(function (res) {
         if (!res.ok) throw new Error(res.j.error || "Send failed");
+        setState("is-done");
         status.className = "formstatus ok";
         status.textContent = "Sent. We'll confirm availability and your final price shortly.";
       })
       .catch(function () {
+        setState(null);
         status.className = "formstatus err";
         status.textContent = "That didn't go through. Email hello@nextlegdetail.com and we'll take it from there.";
       })
-      .then(function () { btn.disabled = false; });
+      .then(function () { if (!btn.classList.contains("is-done")) setState(null); });
   });
 
   // ============================================================
@@ -387,6 +457,9 @@
   // block above sets, and only right before it can undo it.
   // ============================================================
   var slow = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var finePointer = function () {
+    return !!(window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches);
+  };
   var io2 = "IntersectionObserver" in window
     ? function (el, fn, opts) { var o = new IntersectionObserver(function (es) {
         es.forEach(function (e) { if (e.isIntersecting) { fn(e.target); o.unobserve(e.target); } });
@@ -477,6 +550,61 @@
     }
   }
 
+  // ---- one scroll listener for everything that tracks the scroll
+  // Separate listeners each doing their own getBoundingClientRect is how a
+  // page starts dropping frames. One rAF-gated pass, one layout read.
+  var rail = document.querySelector(".progress");
+  var shots = Array.prototype.slice.call(document.querySelectorAll(".shot.reveal"));
+  var parallax = !slow && shots.length;
+  if (rail || parallax) {
+    var vh = window.innerHeight;
+    var pending = false;
+    var pass = function () {
+      pending = false;
+      if (rail) {
+        var max = document.documentElement.scrollHeight - vh;
+        var p = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+        rail.style.transform = "scaleX(" + p.toFixed(4) + ")";
+      }
+      if (!parallax) return;
+      for (var i = 0; i < shots.length; i++) {
+        var el = shots[i];
+        var img = el.firstElementChild;
+        if (!img || img.tagName !== "IMG") continue;
+        var r = el.getBoundingClientRect();
+        if (r.bottom < -200 || r.top > vh + 200) continue;
+        // -1 at the bottom of the window, +1 at the top. The image drifts
+        // against the scroll by a fraction of its own overscan.
+        var t = ((r.top + r.height / 2) - vh / 2) / (vh / 2 + r.height / 2);
+        img.style.setProperty("--py", (t * -26).toFixed(2) + "px");
+      }
+    };
+    var onScroll = function () { if (!pending) { pending = true; requestAnimationFrame(pass); } };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", function () { vh = window.innerHeight; onScroll(); }, { passive: true });
+    pass();
+  }
+
+  // ---- the fee chips arrive in order
+  var fees = document.querySelector(".fees");
+  if (fees) {
+    Array.prototype.forEach.call(fees.children, function (c, i) { c.style.setProperty("--i", i); });
+    io2(fees, function (el) { el.classList.add("is-in"); });
+    setTimeout(function () { fees.classList.add("is-in"); }, 4000);
+  }
+
+  // ---- the price cards catch the light where the pointer is
+  var cards = document.querySelectorAll(".menu li");
+  if (cards.length && !slow && finePointer()) {
+    Array.prototype.forEach.call(cards, function (card) {
+      card.addEventListener("pointermove", function (e) {
+        var r = card.getBoundingClientRect();
+        card.style.setProperty("--mx", (((e.clientX - r.left) / r.width) * 100).toFixed(1) + "%");
+        card.style.setProperty("--my", (((e.clientY - r.top) / r.height) * 100).toFixed(1) + "%");
+      }, { passive: true });
+    });
+  }
+
   // ---- the standing call to action, once the hero's own has gone
   var corner = document.querySelector(".corner");
   var stageEl = document.querySelector(".hero__stage");
@@ -516,7 +644,7 @@
 
   // Respond on press, not on release. Cancel if the finger slides away.
   document.addEventListener("pointerdown", function (e) {
-    var b = e.target.closest ? e.target.closest(".btn") : null;
+    var b = e.target.closest ? e.target.closest(".btn, .menu li, .svc label") : null;
     if (!b) return;
     b.classList.add("is-pressed");
     var clear = function () { b.classList.remove("is-pressed"); };

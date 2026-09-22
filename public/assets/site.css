@@ -330,24 +330,73 @@ section[id], figure[id] { scroll-margin-top: 66px; }
 .classpick__examples { margin: 14px 0 30px; color: var(--ink-3); font-size: 0.95rem; min-height: 1.6em; }
 
 /* ---------- service menu ---------- */
-.menu { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+/* ---------- the menu: four cards, not four letterbox bars ----------
+   Each card reads top to bottom - what it is, what it involves, what it
+   costs - with the number anchored under a rule so it is always the last
+   thing the eye lands on. */
+.menu {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(12px, 1.6vw, 18px);
+}
 .menu li {
-  display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.55fr) auto;
-  gap: 8px 30px; align-items: baseline;
-  padding: 22px 24px; border-radius: var(--r-lg);
-  background: var(--surface); border: 1px solid var(--line-soft);
-  transition: box-shadow 240ms ease, transform 240ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  position: relative; isolation: isolate; overflow: hidden;
+  display: grid; grid-template-rows: auto 1fr auto; gap: 14px;
+  padding: clamp(22px, 2.6vw, 30px);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow-1);
+  /* A spring-shaped curve. The card lifts toward the pointer and settles. */
+  transition: transform 420ms cubic-bezier(0.19, 1, 0.22, 1),
+              box-shadow 420ms cubic-bezier(0.19, 1, 0.22, 1),
+              border-color 300ms ease;
 }
-.menu li:hover { box-shadow: var(--shadow-1); }
-.menu h3 { font-size: 1.14rem; }
-.menu .dur { display: block; margin-top: 5px; font-size: 0.78rem; color: var(--ink-3); letter-spacing: 0; }
-.menu p { color: var(--ink-2); font-size: 0.97rem; }
-.price { font-size: 1.32rem; font-weight: 600; letter-spacing: -0.026em; white-space: nowrap; font-variant-numeric: tabular-nums; text-align: right; }
-.price small { display: block; font-size: 0.68rem; font-weight: 500; color: var(--ink-3); letter-spacing: 0.05em; text-transform: uppercase; }
-@media (max-width: 760px) {
-  .menu li { grid-template-columns: 1fr auto; padding: 20px; }
-  .menu li p { grid-column: 1 / -1; grid-row: 2; }
+/* On a dark ground a flat fill has no edge. The inset highlight is the lit
+   top lip of a real surface, which is what separates the card from the page. */
+:root[data-theme="dark"] .menu li,
+:root:not([data-theme="light"]) .menu li {
+  box-shadow: var(--shadow-1), inset 0 1px 0 rgba(255, 255, 255, 0.055);
 }
+@media (hover: hover) {
+  .menu li:hover {
+    transform: translate3d(0, -4px, 0);
+    box-shadow: var(--shadow-2);
+    border-color: color-mix(in srgb, var(--taxi) 34%, var(--line-soft));
+  }
+  :root[data-theme="dark"] .menu li:hover,
+  :root:not([data-theme="light"]) .menu li:hover {
+    box-shadow: var(--shadow-2), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  }
+}
+.menu li.is-pressed { transform: translate3d(0, -1px, 0) scale(0.992); transition-duration: 120ms; }
+
+/* A specular highlight that follows the pointer across the card. */
+.menu .sheen {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  opacity: 0; transition: opacity 360ms ease;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 0%),
+              color-mix(in srgb, var(--taxi) 16%, transparent), transparent 62%);
+}
+@media (hover: hover) { .menu li:hover .sheen { opacity: 1; } }
+
+.menu__top { display: grid; gap: 5px; }
+.menu h3 { font-size: 1.18rem; letter-spacing: -0.016em; }
+.menu .dur { font-size: 0.78rem; color: var(--ink-3); letter-spacing: 0; }
+.menu p { color: var(--ink-2); font-size: 0.97rem; line-height: 1.5; }
+.menu__foot {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding-top: 16px; border-top: 1px solid var(--line-soft);
+}
+.menu__from { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-3); }
+.price {
+  font-family: var(--display); font-weight: 400;
+  font-size: clamp(1.8rem, 2.6vw, 2.3rem); line-height: 1;
+  letter-spacing: -0.012em; white-space: nowrap;
+  font-variant-numeric: tabular-nums; text-align: right;
+}
+.price small { display: block; font-family: var(--body); font-size: 0.68rem; font-weight: 500; color: var(--ink-3); letter-spacing: 0.05em; text-transform: uppercase; }
+@media (max-width: 860px) { .menu { grid-template-columns: 1fr; } }
 .addons { margin-top: 24px; color: var(--ink-2); font-size: 0.97rem; max-width: 62rem; }
 .fees { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
 .chip { font-size: 0.8rem; padding: 6px 12px; border-radius: var(--pill); background: var(--surface-3); color: var(--ink-2); letter-spacing: -0.005em; }
@@ -398,7 +447,7 @@ section[id], figure[id] { scroll-margin-top: 66px; }
 .programs ul { margin: 0; padding-left: 18px; color: var(--ink-2); font-size: 0.95rem; }
 
 /* ---------- quote ---------- */
-.quote { display: grid; grid-template-columns: minmax(0, 1.22fr) minmax(0, 0.95fr); gap: clamp(22px, 4vw, 44px); align-items: start; }
+.quote { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.82fr); gap: clamp(22px, 4vw, 44px); align-items: start; }
 @media (max-width: 980px) { .quote { grid-template-columns: 1fr; } }
 .panel { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-lg); padding: clamp(20px, 3vw, 30px); box-shadow: var(--shadow-1); }
 .panel + .panel { margin-top: 16px; }
@@ -422,20 +471,97 @@ select {
   background-size: 6px 6px, 6px 6px; background-repeat: no-repeat;
   padding-right: 38px;
 }
-input:focus, select:focus, textarea:focus { background: var(--surface); border-color: color-mix(in srgb, var(--link) 55%, transparent); outline: none; box-shadow: 0 0 0 4px color-mix(in srgb, var(--link) 16%, transparent); }
-textarea { min-height: 104px; resize: vertical; }
-.svc { display: grid; gap: 2px; }
-.svc label {
-  display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 12px; align-items: center;
-  padding: 12px 12px; margin-inline: -12px; border-radius: var(--r-sm); cursor: pointer;
-  transition: background-color 160ms ease;
+/* The ring overshoots once and settles, so focus lands rather than appears. */
+input:focus, select:focus, textarea:focus {
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--link) 60%, transparent);
+  outline: none;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--link) 17%, transparent);
+  transition: background-color 160ms ease, border-color 160ms ease,
+              box-shadow 380ms cubic-bezier(0.19, 1.5, 0.3, 1);
 }
-.svc label:hover { background: var(--surface-2); }
-.svc input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--link); margin: 0; }
+.field { position: relative; }
+.field label { transition: color 200ms ease; }
+.field:focus-within > label { color: var(--link); }
+/* A field that has been left empty or wrong says so where it happened,
+   once the person has moved on - never while they are still typing. */
+.field.is-bad input, .field.is-bad select, .field.is-bad textarea {
+  border-color: color-mix(in srgb, var(--warn) 62%, transparent);
+  background: color-mix(in srgb, var(--warn) 7%, var(--surface-2));
+}
+.fielderr {
+  font-size: 0.8rem; color: var(--warn); letter-spacing: -0.004em;
+  margin: 0; overflow: hidden;
+  max-height: 0; opacity: 0;
+  transition: max-height 320ms cubic-bezier(0.19, 1, 0.22, 1), opacity 240ms ease;
+}
+.field.is-bad .fielderr { max-height: 3em; opacity: 1; }
+textarea { min-height: 104px; resize: vertical; }
+/* ---------- picking services ----------
+   The native checkbox still does the work - it just stops being the thing
+   you look at. The tick is drawn, so it can be given a stroke that runs. */
+.svc { display: grid; gap: 8px; }
+.svc label {
+  position: relative;
+  display: grid; grid-template-columns: 24px minmax(0, 1fr) auto auto; gap: 14px; align-items: center;
+  padding: 14px 16px; border-radius: var(--r); cursor: pointer;
+  background: var(--surface-2);
+  border: 1px solid transparent;
+  transition: background-color 220ms ease, border-color 220ms ease,
+              transform 300ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+@media (hover: hover) { .svc label:hover { background: var(--surface-3); } }
+.svc label:active, .svc label.is-pressed { transform: scale(0.988); transition-duration: 110ms; }
+.svc label:has(input:checked) {
+  background: color-mix(in srgb, var(--taxi) 10%, var(--surface-2));
+  border-color: color-mix(in srgb, var(--taxi) 38%, transparent);
+}
+.svc label:has(input:focus-visible) { outline: 2px solid var(--link); outline-offset: 2px; }
+.svc input[type="checkbox"] {
+  position: absolute; opacity: 0; width: 24px; height: 24px; margin: 0; cursor: pointer;
+}
+.tickbox {
+  width: 24px; height: 24px; border-radius: 8px;
+  display: grid; place-items: center;
+  background: var(--surface); border: 1px solid var(--line);
+  transition: background-color 240ms cubic-bezier(0.19, 1, 0.22, 1),
+              border-color 240ms ease, transform 300ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+.tickbox svg { width: 16px; height: 16px; display: block; }
+.tickbox path {
+  fill: none; stroke: var(--accent-ink); stroke-width: 2.4;
+  stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 22; stroke-dashoffset: 22;
+  transition: stroke-dashoffset 260ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+.svc input:checked ~ .tickbox,
+label:has(input:checked) > .tickbox {
+  background: var(--taxi-deep); border-color: var(--taxi-deep); transform: scale(1.04);
+}
+label:has(input:checked) > .tickbox path { stroke: #fff; stroke-dashoffset: 0; transition-delay: 60ms; }
+:root[data-theme="dark"] label:has(input:checked) > .tickbox,
+:root:not([data-theme="light"]) label:has(input:checked) > .tickbox { background: var(--taxi); border-color: var(--taxi); }
+:root[data-theme="dark"] label:has(input:checked) > .tickbox path,
+:root:not([data-theme="light"]) label:has(input:checked) > .tickbox path { stroke: #14283F; }
+
+/* No :has() - the tick still draws, the row just does not tint. */
+@supports not selector(:has(*)) {
+  .svc input[type="checkbox"] { position: static; opacity: 1; }
+  .tickbox { display: none; }
+}
 .svc .svcname { font-weight: 500; font-size: 0.97rem; letter-spacing: -0.008em; }
 .svc .svcnote { display: block; font-weight: 400; font-size: 0.81rem; color: var(--ink-3); letter-spacing: 0; }
 .svc .svcprice { font-size: 0.9rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
-.qty { width: 68px !important; min-height: 38px !important; padding: 7px 10px !important; }
+/* The quantity gets its own cell beside the price, not a line of its own
+   under the description. */
+.qty {
+  width: 64px !important; min-height: 36px !important; padding: 6px 9px !important;
+  text-align: center; font-variant-numeric: tabular-nums;
+  background: var(--surface) !important;
+  border-color: var(--line) !important;
+}
+.qty:focus { border-color: color-mix(in srgb, var(--link) 60%, transparent) !important; }
+.svc label:not(:has(.qty)) .svcprice { grid-column: 3 / -1; }
 .estimate { position: sticky; top: 72px; }
 .estimate__total { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 18px 0 4px; border-top: 1px solid var(--line); margin-top: 14px; }
 .estimate__total strong { font-size: clamp(2rem, 4.2vw, 2.7rem); font-weight: 700; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; }
@@ -729,18 +855,83 @@ textarea { min-height: 104px; resize: vertical; }
   transition-delay: var(--d, 0ms);
 }
 
-/* ---------- price rows cascade ---------- */
-.js .menu li { opacity: 0; transform: translateY(14px); }
+/* ---------- price cards cascade ----------
+   The entrance uses `translate`, not `transform`, so it composes with the
+   hover lift instead of overriding it. Two properties, two jobs. */
+.js .menu li { opacity: 0; translate: 0 16px; }
 .js .menu.is-in li {
-  opacity: 1; transform: none;
-  transition: opacity 560ms ease, transform 640ms cubic-bezier(0.19, 1, 0.22, 1);
-  transition-delay: calc(var(--i, 0) * 45ms);
+  opacity: 1; translate: none;
+  transition: opacity 560ms ease, translate 700ms cubic-bezier(0.19, 1, 0.22, 1),
+              transform 420ms cubic-bezier(0.19, 1, 0.22, 1),
+              box-shadow 420ms cubic-bezier(0.19, 1, 0.22, 1),
+              border-color 300ms ease;
+  transition-delay: calc(var(--i, 0) * 55ms), calc(var(--i, 0) * 55ms), 0ms, 0ms, 0ms;
 }
 
 /* ---------- the job steps light up one at a time ---------- */
 .js .steps li { transition: opacity 420ms ease, color 420ms ease; }
 .js .steps.is-tracking li { opacity: 0.34; }
 .js .steps.is-tracking li.is-current { opacity: 1; }
+
+
+/* ---------- the send button says what it is doing ----------
+   Three states in one element: the label cross-fades and the width springs
+   between them, so the button never jumps or goes dead under the finger. */
+.btn { position: relative; overflow: hidden; }
+.btn__label { display: inline-flex; align-items: center; gap: 9px; transition: opacity 200ms ease, transform 280ms cubic-bezier(0.19, 1, 0.22, 1); }
+.btn.is-busy .btn__label, .btn.is-done .btn__label { opacity: 0; transform: translateY(-120%); }
+.btn__state {
+  position: absolute; inset: 0;
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  opacity: 0; transform: translateY(120%);
+  transition: opacity 200ms ease, transform 280ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+.btn.is-busy .btn__busy, .btn.is-done .btn__done { opacity: 1; transform: none; }
+.spinner {
+  width: 15px; height: 15px; border-radius: 50%;
+  border: 2px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-top-color: currentColor;
+  animation: spin 720ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.btn.is-done { background: var(--ok); }
+
+/* ---------- estimate lines arrive and leave ---------- */
+.lines li { transition: opacity 300ms ease, transform 380ms cubic-bezier(0.19, 1, 0.22, 1); }
+.js .lines li.is-new { opacity: 0; transform: translateY(-7px); }
+.js .lines li.is-settled { opacity: 1; transform: none; }
+
+/* ---------- scroll position, as a hairline ---------- */
+.progress {
+  position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 46;
+  transform-origin: 0 50%; transform: scaleX(0);
+  background: linear-gradient(to right, var(--taxi-deep), var(--taxi));
+  pointer-events: none; opacity: 0; transition: opacity 400ms ease;
+}
+.js .progress { opacity: 1; }
+
+/* ---------- photography arrives as a wipe, and drifts on scroll ---------- */
+/* The wipe goes on the image, never on the <figure>.
+   IntersectionObserver folds the target's own clip-path into the
+   intersection rect, so clipping the watched element to zero height means
+   it never reports as intersecting, never gets .is-in, and never unclips
+   itself. The figure stays measurable; the picture inside it wipes up. */
+.js .shot.reveal img { clip-path: inset(0 0 100% 0); }
+.js .shot.reveal.is-in img {
+  clip-path: inset(0 0 0 0);
+  transition: clip-path 1000ms cubic-bezier(0.19, 1, 0.22, 1), transform 60ms linear;
+}
+.js .shot img { transform: scale(1.12) translate3d(0, var(--py, 0px), 0); will-change: transform; }
+
+/* ---------- fee chips arrive in order ---------- */
+.js .fees .chip { opacity: 0; translate: 0 8px; }
+.js .fees.is-in .chip {
+  opacity: 1; translate: none;
+  transition: opacity 420ms ease, translate 520ms cubic-bezier(0.19, 1, 0.22, 1);
+  transition-delay: calc(var(--i, 0) * 40ms);
+}
+.chip { transition: background-color 200ms ease, color 200ms ease; }
+@media (hover: hover) { .chip:hover { background: color-mix(in srgb, var(--taxi) 18%, var(--surface-3)); color: var(--ink); } }
 
 /* ---------- accessibility preferences ---------- */
 @media (prefers-reduced-motion: reduce) {
@@ -756,7 +947,16 @@ textarea { min-height: 104px; resize: vertical; }
      reduced motion on, it all resolves to its finished state at once. */
   .js .word { transform: none; opacity: 1; }
   .js .wordwrap { overflow: visible; }
-  .js .menu li { opacity: 1; transform: none; }
+  .js .menu li { opacity: 1; translate: none; }
+  .menu li, .menu li:hover { transform: none; }
+  .menu .sheen { display: none; }
+  .js .shot.reveal img, .js .shot.reveal.is-in img { clip-path: none; }
+  .js .shot img { transform: none; }
+  .js .fees .chip { opacity: 1; translate: none; }
+  .js .lines li.is-new { opacity: 1; transform: none; }
+  .spinner { animation: none; border-top-color: transparent; }
+  .progress { transition: none; }
+  input:focus, select:focus, textarea:focus { transition: box-shadow 140ms ease; }
   .js .section--alt::before { transform: scaleX(1); transition: none; }
   .js .steps.is-tracking li { opacity: 1; }
   .cursor { display: none; }
