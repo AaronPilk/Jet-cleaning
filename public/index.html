@@ -19,19 +19,20 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="preload" href="/assets/display-serif.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/assets/site.css">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "LocalBusiness", "name": "Next Leg Aircraft Detailing", "description": "Mobile aircraft detailing for private jets, turboprops and turbine helicopters at Tampa Bay airports.", "url": "https://nextlegdetail.com/", "telephone": "", "email": "hello@nextlegdetail.com", "address": {"@type": "PostalAddress", "streetAddress": "St. Petersburg, Florida", "addressLocality": "St. Petersburg", "addressRegion": "FL", "addressCountry": "US"}, "areaServed": ["Tampa", "St. Petersburg", "Clearwater", "Sarasota", "Lakeland", "Brooksville"], "priceRange": "$$$", "makesOffer": [{"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Trip-Ready Turn Clean"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Exterior Dry Wash & Protect"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Full Interior Detail"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Spill & Stain Rescue (first area)"}}]}</script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<header class="topbar">
+<header class="topbar topbar--over">
   <div class="wrap topbar__row">
     <a class="brand" href="#top"><svg class="brand__mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect width="64" height="64" rx="14.1" fill="#14283F"/><g transform="translate(32,32) rotate(52) scale(1.06)"><path d="M 0,-19 L 13.2,13.4 L 0,5.6 L -13.2,13.4 Z" fill="#B08D57"/></g></svg><span>Next Leg<span class="brand__tail"> Aircraft Detailing</span></span></a>
     <nav class="nav" aria-label="Main">
-      <a href="#services">Services</a>
-      <a href="#method">How we work</a>
-      <a href="#programs">Membership</a>
-      <a href="#faq">FAQ</a>
+      <a href="#services"><span class="plain">Services</span><span class="ital" aria-hidden="true">Services</span></a>
+      <a href="#method"><span class="plain">How we work</span><span class="ital" aria-hidden="true">How we work</span></a>
+      <a href="#programs"><span class="plain">Membership</span><span class="ital" aria-hidden="true">Membership</span></a>
+      <a href="#faq"><span class="plain">FAQ</span><span class="ital" aria-hidden="true">FAQ</span></a>
     </nav>
     <a class="btn btn--small" href="#quote">Get a quote</a>
   </div>
@@ -39,48 +40,30 @@
 
 <main id="main">
   <section class="hero" id="top">
-    <div class="wrap hero__grid">
-      <div class="hero__copy">
+    <div class="hero__stage">
+      <img class="hero__img" src="/photos/hero-1600.webp"
+           srcset="/photos/hero-1000.webp 1000w, /photos/hero-1600.webp 1600w, /photos/hero-2200.webp 2200w"
+           sizes="100vw"
+           width="2200" height="943" fetchpriority="high" decoding="async"
+           alt="A business jet on a wet apron at blue hour, ramp lights reflected in the standing water.">
+      <canvas class="hero__canvas" aria-hidden="true"></canvas>
+      <div class="hero__veil" aria-hidden="true"></div>
+      <p class="hero__hint" aria-hidden="true">Move to clean</p>
+      <div class="wrap wrap--wide hero__copy">
         <p class="eyebrow">Aircraft detailing <span>/</span> Tampa Bay</p>
-        <h1>Trip-ready between legs.</h1>
+        <h1 data-split>Trip-ready <em>between</em> legs.</h1>
         <p class="lede">Turn cleans, exterior dry washes, full interiors and short-notice stain rescue for jets, turboprops and turbine helicopters. Based in St. Petersburg, working at Tampa Bay airports for operators, FBOs, maintenance shops and owners.</p>
         <div class="hero__actions">
           <a class="btn" href="#quote">Get an instant estimate</a>
           <a class="textlink" href="#quote">Rush job? Tell us the tail time &rarr;</a>
         </div>
-        <dl class="facts">
-          <div><dt>Same-day response</dt><dd>On call</dd></div>
-          <div><dt>Photo report</dt><dd>Within 2 hours</dd></div>
-          <div><dt>Client roster</dt><dd>Capped at 12</dd></div>
-        </dl>
       </div>
-
     </div>
-    <div class="wrap wrap--wide">
-      <figure class="shot shot--hero herofig reveal">
-        <img src="/photos/hero-1600.webp"
-             srcset="/photos/hero-1000.webp 1000w, /photos/hero-1600.webp 1600w, /photos/hero-2200.webp 2200w"
-             sizes="(max-width: 1320px) 100vw, 1320px"
-             width="2200" height="943" fetchpriority="high" decoding="async"
-             alt="A business jet parked on a wet airport apron at blue hour.">
-      <figure class="report reveal" aria-label="Sample photo report">
-        <div class="report__head"><span class="label">Photo report</span><span class="label">Sample</span></div>
-        <div class="report__meta">
-          <strong>Learjet 60</strong><span class="mono">Class 3</span>
-          <span>Tampa International (TPA)</span><span class="mono">Tail withheld</span>
-        </div>
-        <ol>
-          <li><span class="tick" aria-hidden="true"></span><time>06:02</time><span>Walkaround photos with crew</span><span class="val">24</span></li>
-          <li><span class="tick" aria-hidden="true"></span><time>06:09</time><span>Port covers counted by operator maintenance</span><span class="val">4 / 4</span></li>
-          <li><span class="tick" aria-hidden="true"></span><time>06:14</time><span>Exterior dry wash and protect</span><span class="val">start</span></li>
-          <li><span class="tick" aria-hidden="true"></span><time>08:20</time><span>Turn clean: cabin, galley, lav, glass</span><span class="val">done</span></li>
-          <li><span class="tick" aria-hidden="true"></span><time>08:41</time><span>FOD walk and towel count</span><span class="val">38 / 38</span></li>
-          <li><span class="tick" aria-hidden="true"></span><time>09:05</time><span>Report sent to operator</span><span class="val">sent</span></li>
-        </ol>
-        <div class="report__foot">Example of the report every customer receives. Tail numbers stay private.</div>
-      </figure>
-      </figure>
-    </div>
+    <dl class="facts">
+      <div><dt>Same-day response</dt><dd>On call</dd></div>
+      <div><dt>Photo report</dt><dd>Within 2 hours</dd></div>
+      <div><dt>Client roster</dt><dd>Capped at 12</dd></div>
+    </dl>
   </section>
 
   <section class="section" id="services" aria-labelledby="services-title">
@@ -125,6 +108,23 @@
           <li><div><h3>Photo report within two hours</h3><p>Before and after from the same angles, what we did, what we used, and anything we noticed and reported to the crew.</p></div></li>
         </ol>
       </div>
+      <div class="method__side">
+        <figure class="report reveal" aria-label="Sample photo report">
+        <div class="report__head"><span class="label">Photo report</span><span class="label">Sample</span></div>
+        <div class="report__meta">
+          <strong>Learjet 60</strong><span class="mono">Class 3</span>
+          <span>Tampa International (TPA)</span><span class="mono">Tail withheld</span>
+        </div>
+        <ol>
+          <li><span class="tick" aria-hidden="true"></span><time>06:02</time><span>Walkaround photos with crew</span><span class="val">24</span></li>
+          <li><span class="tick" aria-hidden="true"></span><time>06:09</time><span>Port covers counted by operator maintenance</span><span class="val">4 / 4</span></li>
+          <li><span class="tick" aria-hidden="true"></span><time>06:14</time><span>Exterior dry wash and protect</span><span class="val">start</span></li>
+          <li><span class="tick" aria-hidden="true"></span><time>08:20</time><span>Turn clean: cabin, galley, lav, glass</span><span class="val">done</span></li>
+          <li><span class="tick" aria-hidden="true"></span><time>08:41</time><span>FOD walk and towel count</span><span class="val">38 / 38</span></li>
+          <li><span class="tick" aria-hidden="true"></span><time>09:05</time><span>Report sent to operator</span><span class="val">sent</span></li>
+        </ol>
+        <div class="report__foot">Example of the report every customer receives. Tail numbers stay private.</div>
+      </figure>
       <aside class="never reveal" aria-labelledby="never-title">
         <h3 id="never-title">What we never do</h3>
         <ul>
@@ -136,6 +136,7 @@
           <li>Post an aircraft, cabin or tail number without written permission</li>
         </ul>
       </aside>
+      </div>
     </div>
   </section>
 
@@ -271,6 +272,10 @@
     </div>
   </section>
 </main>
+<div class="grain" aria-hidden="true"></div>
+<div class="cursor" aria-hidden="true"></div>
+<p class="corner corner--right"><a class="corner__pill" href="#quote"><span class="dot"></span>On call &middot; Get an estimate</a></p>
+
 
 <footer class="footer">
   <div class="wrap footer__row">
@@ -282,5 +287,6 @@
 
 <script src="/assets/pricing.js"></script>
 <script src="/assets/site.js"></script>
+<script src="/assets/hero.js" defer></script>
 </body>
 </html>

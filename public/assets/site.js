@@ -378,6 +378,142 @@
     showAll();
   }
 
+  // ============================================================
+  // Choreography
+  //
+  // All of this is decoration and all of it is additive: every element
+  // it touches is already readable before a single line of it runs, and
+  // the CSS only hides anything once .js is on the document - which the
+  // block above sets, and only right before it can undo it.
+  // ============================================================
+  var slow = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var io2 = "IntersectionObserver" in window
+    ? function (el, fn, opts) { var o = new IntersectionObserver(function (es) {
+        es.forEach(function (e) { if (e.isIntersecting) { fn(e.target); o.unobserve(e.target); } });
+      }, opts || { rootMargin: "0px 0px -10% 0px", threshold: 0.12 }); o.observe(el); }
+    : function (el, fn) { fn(el); };
+
+  // ---- headline words rise out of their own line box
+  // Only leaf text nodes are split, so the <em> in the hero headline keeps
+  // its italic and the markup stays meaningful.
+  Array.prototype.forEach.call(document.querySelectorAll("[data-split]"), function (head) {
+    var n = 0;
+    var walk = function (node) {
+      Array.prototype.slice.call(node.childNodes).forEach(function (child) {
+        if (child.nodeType === 3) {
+          var parts = child.nodeValue.split(/(\s+)/);
+          var frag = document.createDocumentFragment();
+          parts.forEach(function (part) {
+            if (!part) return;
+            if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
+            var wrap = document.createElement("span");
+            wrap.className = "wordwrap";
+            var word = document.createElement("span");
+            word.className = "word";
+            word.style.setProperty("--d", (n++ * 70) + "ms");
+            word.textContent = part;
+            wrap.appendChild(word);
+            frag.appendChild(wrap);
+          });
+          node.replaceChild(frag, child);
+        } else if (child.nodeType === 1) {
+          walk(child);
+        }
+      });
+    };
+    walk(head);
+    if (!n) return;
+    // The hero headline is above the fold, so it plays at once rather than
+    // waiting for a scroll that may never come.
+    if (head.closest && head.closest(".hero")) {
+      requestAnimationFrame(function () { head.classList.add("is-in"); });
+    } else {
+      io2(head, function (el) { el.classList.add("is-in"); });
+    }
+    setTimeout(function () { head.classList.add("is-in"); }, 4000);
+  });
+
+  // ---- price rows cascade
+  Array.prototype.forEach.call(document.querySelectorAll(".menu"), function (list) {
+    Array.prototype.forEach.call(list.children, function (li, i) {
+      li.style.setProperty("--i", Math.min(i, 12));
+    });
+    io2(list, function (el) { el.classList.add("is-in"); });
+    setTimeout(function () { list.classList.add("is-in"); }, 4000);
+  });
+
+  // ---- the hairline draws itself across a section edge
+  Array.prototype.forEach.call(document.querySelectorAll(".section--alt"), function (sec) {
+    io2(sec, function (el) { el.classList.add("is-in"); }, { rootMargin: "0px 0px -4% 0px", threshold: 0 });
+  });
+
+  // ---- the four job steps take it in turns
+  var steps = document.querySelector(".steps");
+  if (steps && !slow && "IntersectionObserver" in window) {
+    var items = Array.prototype.slice.call(steps.children);
+    if (items.length > 1) {
+      var tracking = false;
+      var mark = function () {
+        var mid = window.innerHeight * 0.48;
+        var best = null, bestD = Infinity;
+        items.forEach(function (li) {
+          var r = li.getBoundingClientRect();
+          var d = Math.abs(r.top + r.height / 2 - mid);
+          if (d < bestD) { bestD = d; best = li; }
+        });
+        items.forEach(function (li) { li.classList.toggle("is-current", li === best); });
+      };
+      new IntersectionObserver(function (es) {
+        tracking = es[0].isIntersecting;
+        steps.classList.toggle("is-tracking", tracking);
+        if (tracking) mark();
+      }, { threshold: 0.08 }).observe(steps);
+      var ticking = false;
+      window.addEventListener("scroll", function () {
+        if (!tracking || ticking) return;
+        ticking = true;
+        requestAnimationFrame(function () { mark(); ticking = false; });
+      }, { passive: true });
+    }
+  }
+
+  // ---- the standing call to action, once the hero's own has gone
+  var corner = document.querySelector(".corner");
+  var stageEl = document.querySelector(".hero__stage");
+  if (corner && stageEl && "IntersectionObserver" in window) {
+    new IntersectionObserver(function (es) {
+      corner.classList.toggle("is-on", !es[0].isIntersecting);
+    }, { threshold: 0 }).observe(stageEl);
+  } else if (corner) {
+    corner.classList.add("is-on");
+  }
+
+  // ---- the cursor, which over the hero is the cloth
+  var fine = window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  var ring = document.querySelector(".cursor");
+  if (ring && fine && !slow) {
+    var cx = window.innerWidth / 2, cy = window.innerHeight / 2, rx = cx, ry = cy, spinning = false;
+    var step = function () {
+      rx += (cx - rx) * 0.22;
+      ry += (cy - ry) * 0.22;
+      ring.style.transform = "translate3d(" + rx.toFixed(2) + "px," + ry.toFixed(2) + "px,0)";
+      if (Math.abs(cx - rx) > 0.1 || Math.abs(cy - ry) > 0.1) requestAnimationFrame(step);
+      else spinning = false;
+    };
+    document.addEventListener("pointermove", function (e) {
+      if (e.pointerType && e.pointerType !== "mouse") return;
+      cx = e.clientX; cy = e.clientY;
+      ring.classList.add("is-on");
+      var t = e.target;
+      var link = t && t.closest ? t.closest("a, button, summary, label, input, select, textarea") : null;
+      ring.classList.toggle("is-link", !!link);
+      ring.classList.toggle("is-stage", !link && !!(t && t.closest && t.closest(".hero__stage")));
+      if (!spinning) { spinning = true; requestAnimationFrame(step); }
+    }, { passive: true });
+    document.addEventListener("pointerleave", function () { ring.classList.remove("is-on"); });
+    window.addEventListener("blur", function () { ring.classList.remove("is-on"); });
+  }
+
   // Respond on press, not on release. Cancel if the finger slides away.
   document.addEventListener("pointerdown", function (e) {
     var b = e.target.closest ? e.target.closest(".btn") : null;
