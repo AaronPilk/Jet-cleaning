@@ -222,14 +222,15 @@
 
     var base = sub;
     if (sub > 0 && sub < P.fees.minInvoice) {
-      lines.push(["Minimum visit top-up", P.fees.minInvoice - sub]);
+      lines.push(["Call-out minimum", P.fees.minInvoice - sub]);
       base = P.fees.minInvoice;
     }
+    // Response fees are flat, not a percentage. Same-day is the product, not a surcharge.
     var rush = P.timing[timing.value] || 0;
     var ah = after.checked ? P.fees.afterHours : 0;
-    if (base > 0 && rush) lines.push(["Rush (+" + Math.round(rush * 100) + "%)", base * rush]);
-    if (base > 0 && ah) lines.push(["After-hours (+" + Math.round(ah * 100) + "%)", base * ah]);
-    var total = base * (1 + rush + ah);
+    if (base > 0 && rush) lines.push([timing.options[timing.selectedIndex].text.split(" \u2014 ")[0], rush]);
+    if (base > 0 && ah) lines.push(["After-hours start", ah]);
+    var total = base + (base > 0 ? rush + ah : 0);
 
     var ap = null;
     for (var i = 0; i < P.airports.length; i++) if (P.airports[i].code === airport.value) ap = P.airports[i];
@@ -354,7 +355,13 @@
   }
 
   var reveals = document.querySelectorAll(".reveal");
+  var showAll = function () {
+    Array.prototype.forEach.call(reveals, function (el) { el.classList.add("is-in"); });
+  };
   if ("IntersectionObserver" in window && reveals.length) {
+    // Hide first, watch second, in that order and nowhere earlier: the page
+    // only goes dark once something is guaranteed to bring it back.
+    document.documentElement.classList.add("js");
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
         if (!e.isIntersecting) return;
@@ -363,8 +370,12 @@
       });
     }, { rootMargin: "0px 0px -8% 0px", threshold: 0.06 });
     Array.prototype.forEach.call(reveals, function (el) { io.observe(el); });
+    // Belt and braces. If an observer never fires - a stalled tab, a
+    // printing context, a browser we have not met - show everything anyway.
+    setTimeout(showAll, 4000);
+    window.addEventListener("beforeprint", showAll);
   } else {
-    Array.prototype.forEach.call(reveals, function (el) { el.classList.add("is-in"); });
+    showAll();
   }
 
   // Respond on press, not on release. Cancel if the finger slides away.

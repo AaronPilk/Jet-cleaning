@@ -15,12 +15,12 @@
   --ink-3: #6e6e73;
   --line: rgba(0, 0, 0, 0.10);
   --line-soft: rgba(0, 0, 0, 0.06);
-  --accent: #16325c;
+  --accent: #14283F;
   --accent-ink: #ffffff;
-  --accent-soft: #eaf0f9;
+  --accent-soft: #eef1f5;
   --link: #0a6bd6;
-  --taxi: #e0a810;
-  --taxi-deep: #8a6400;
+  --taxi: #B08D57;
+  --taxi-deep: #6E5636;
   --ok: #1b8a53;
   --warn: #b3412a;
 
@@ -62,8 +62,8 @@
     --accent-ink: #000000;
     --accent-soft: #1d2a3d;
     --link: #58a6ff;
-    --taxi: #f2c33c;
-    --taxi-deep: #f2c33c;
+    --taxi: #C8A97E;
+    --taxi-deep: #C8A97E;
     --ok: #46c07f;
     --warn: #ff9f7a;
     --glass: rgba(20, 20, 22, 0.66);
@@ -86,8 +86,8 @@
   --accent-ink: #000000;
   --accent-soft: #1d2a3d;
   --link: #58a6ff;
-  --taxi: #f2c33c;
-  --taxi-deep: #f2c33c;
+  --taxi: #C8A97E;
+  --taxi-deep: #C8A97E;
   --ok: #46c07f;
   --warn: #ff9f7a;
   --glass: rgba(20, 20, 22, 0.66);
@@ -451,20 +451,26 @@ textarea { min-height: 104px; resize: vertical; }
 .placeholder { background: color-mix(in srgb, var(--taxi) 26%, transparent); padding: 0 4px; border-radius: 4px; }
 
 /* ---------- motion: materialize on enter ---------- */
-.reveal { opacity: 0; transform: translate3d(0, 18px, 0) scale(0.986); filter: blur(7px); }
-.reveal.is-in {
+/* Visible by default. The script adds .js to <html> immediately before it
+   starts watching, so if anything upstream of that fails the page still
+   reads - it just does not animate. A blank page is a worse bug than a
+   missing flourish. */
+.reveal { opacity: 1; }
+.js .reveal { opacity: 0; transform: translate3d(0, 18px, 0) scale(0.986); filter: blur(7px); }
+.js .reveal.is-in {
   opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0);
   transition: opacity 620ms cubic-bezier(0.22, 0.61, 0.36, 1),
               transform 720ms cubic-bezier(0.22, 0.61, 0.36, 1),
               filter 620ms cubic-bezier(0.22, 0.61, 0.36, 1);
 }
-.js-off .reveal { opacity: 1; transform: none; filter: none; }
 
 /* ---------- accessibility preferences ---------- */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .reveal { transform: none; filter: none; }
-  .reveal.is-in { transform: none; filter: none; transition: opacity 260ms ease; }
+  /* .js raised the specificity of the reveal rules, so these have to match it
+     or reduced motion silently stops working. */
+  .js .reveal { transform: none; filter: none; }
+  .js .reveal.is-in { transform: none; filter: none; transition: opacity 260ms ease; }
   .btn, .textlink, .classpick button { transition: background-color 180ms ease, color 180ms ease; }
   .btn:active, .btn.is-pressed, .textlink:active, .classpick button:active { transform: none; }
   .faq summary::before, .faq summary::after { transition: none; }
