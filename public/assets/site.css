@@ -183,7 +183,7 @@ p { margin: 0; }
 .hero { padding-block: clamp(44px, 6.5vw, 82px) 0; text-align: center; }
 section[id], figure[id] { scroll-margin-top: 66px; }
 .hero__grid { display: grid; gap: 26px; justify-items: center; }
-.hero__copy { display: grid; gap: 20px; justify-items: center; max-width: min(760px, 100%); margin-inline: auto; }
+.hero__copy { display: grid; gap: 20px; }
 .hero__copy .lede { max-width: 46ch; }
 .hero h1 { max-width: 16ch; }
 .hero__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 14px 20px; }
@@ -657,7 +657,7 @@ label:has(input:checked) > .tickbox path { stroke: #fff; stroke-dashoffset: 0; t
 .hero { padding: 0; text-align: left; }
 .hero__stage {
   position: relative;
-  min-height: min(92svh, 860px);
+  min-height: min(86svh, 800px);
   display: grid;
   align-items: center;
   overflow: hidden;
@@ -669,6 +669,7 @@ label:has(input:checked) > .tickbox path { stroke: #fff; stroke-dashoffset: 0; t
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   object-fit: cover;
+  object-position: 50% 50%;
   display: block;
 }
 .hero__canvas { opacity: 0; transition: opacity 700ms ease; z-index: 1; }
@@ -682,15 +683,14 @@ label:has(input:checked) > .tickbox path { stroke: #fff; stroke-dashoffset: 0; t
 .hero__veil {
   position: absolute; inset: 0; z-index: 2; pointer-events: none;
   background:
-    linear-gradient(to right, rgba(255, 255, 255, 0.94) 0%,
-                              rgba(255, 255, 255, 0.86) 38%,
-                              rgba(255, 255, 255, 0.62) 58%,
-                              rgba(255, 255, 255, 0.28) 70%,
-                              rgba(255, 255, 255, 0) 84%),
-    linear-gradient(to top, rgba(255, 255, 255, 0.55) 0%,
-                            rgba(255, 255, 255, 0) 26%),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.34) 0%,
-                               rgba(255, 255, 255, 0) 22%);
+    linear-gradient(to right, rgba(255, 255, 255, 0.82) 0%,
+                              rgba(255, 255, 255, 0.64) 34%,
+                              rgba(255, 255, 255, 0.26) 52%,
+                              rgba(255, 255, 255, 0) 66%),
+    linear-gradient(to top, rgba(255, 255, 255, 0.4) 0%,
+                            rgba(255, 255, 255, 0) 22%),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.28) 0%,
+                               rgba(255, 255, 255, 0) 18%);
 }
 
 .hero__copy {
@@ -711,7 +711,7 @@ label:has(input:checked) > .tickbox path { stroke: #fff; stroke-dashoffset: 0; t
   letter-spacing: -0.015em;
   text-wrap: balance;
 }
-.hero__copy .lede { color: var(--ink-2); max-width: 42ch; }
+.hero__copy .lede { color: var(--ink-2); max-width: 36ch; }
 .hero__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; }
 
 /* A line of instruction, once, then it gets out of the way. */
@@ -740,6 +740,7 @@ label:has(input:checked) > .tickbox path { stroke: #fff; stroke-dashoffset: 0; t
 @media (max-width: 860px) {
   .hero__stage { --band: min(46svh, 440px); min-height: 0; display: block; background: var(--ground); }
   .hero__canvas, .hero__img, .hero__veil { inset: 0 0 auto 0; height: var(--band); }
+  .hero__img { object-position: 62% 50%; }
   .hero__veil {
     background:
       linear-gradient(to top, #fff 0%, rgba(255, 255, 255, 0.62) 12%, rgba(255, 255, 255, 0) 32%),

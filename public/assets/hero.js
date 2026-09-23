@@ -1,13 +1,12 @@
 /* ============================================================
    The stage.
 
-   One shader over the hero photograph. Everything is filmed over -
-   streaked, flat, lifted - until a soft region under the pointer
-   clears it, and inside that region the paint reads the way it
-   actually looks after we have been at it: deeper, sharper, wet.
-   A champagne rim sits on the boundary.
-
-   It is the business, drawn rather than described.
+   One shader over the hero photograph, and the photograph is never
+   touched: no film, no blur, nothing taken away. What moves is light.
+   A soft glance of daylight follows the pointer across the paint - a
+   little lift, a little more depth in the colour where it lands, and a
+   faint champagne warmth in the highlights, the way sun moves over a
+   fuselage when you walk around it on the ramp.
 
    Everything in this file is decoration. It runs in its own script
    so that if WebGL is missing, the context is refused, or a driver
@@ -56,78 +55,38 @@
     "  return (uv - 0.5) * sc + f;",
     "}",
 
-    "float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }",
-    "float vnoise(vec2 p){",
-    "  vec2 i = floor(p), f = fract(p);",
-    "  f = f * f * (3.0 - 2.0 * f);",
-    "  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),",
-    "             mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);",
-    "}",
-
     "void main(){",
     "  vec2 frag = gl_FragCoord.xy / uRes;",
     "  vec2 uv = cover(frag);",
 
     "  float ar = uRes.x / uRes.y;",
     "  vec2 d2 = (frag - uMouse) * vec2(ar, 1.0);",
-    "  float ang = atan(d2.y, d2.x);",
     "  float d = length(d2);",
 
-    // The edge breathes a little. A perfect circle reads as a spotlight;
-    // this reads as a cloth.
-    "  float wob = 0.030 * sin(ang * 3.0 + uTime * 0.7) + 0.018 * sin(ang * 5.0 - uTime * 0.5);",
-    "  float r = uR * (0.85 + 0.15 * uIn);",
-    "  float clean = 1.0 - smoothstep(r * 0.74, r + wob, d);",
-    "  clean *= uIn;",
+    // The light. Wide and soft, with no hard edge anywhere, so it reads as
+    // daylight moving rather than a torch.
+    "  float r = uR * (0.9 + 0.1 * uIn);",
+    "  float glow = 1.0 - smoothstep(0.0, r, d);",
+    "  glow = glow * glow * uIn;",
 
-    // The film. Streaks along the direction a cloth would have gone, a soft
-    // five-tap blur so detail is genuinely lost, then flattened and lifted.
-    "  float streak = vnoise(uv * vec2(2.4, 34.0) + vec2(uTime * 0.006, 0.0));",
-    "  float smear  = vnoise(uv * vec2(7.0, 3.0) - vec2(0.0, uTime * 0.004));",
-    "  vec2  off    = vec2((streak - 0.5) * 0.0055, (smear - 0.5) * 0.0022);",
-    "  vec3 f = texture2D(uTex, uv + off).rgb;",
-    "  f += texture2D(uTex, uv + off + vec2( 0.0020, 0.0)).rgb;",
-    "  f += texture2D(uTex, uv + off + vec2(-0.0020, 0.0)).rgb;",
-    "  f += texture2D(uTex, uv + off + vec2(0.0,  0.0020)).rgb;",
-    "  f += texture2D(uTex, uv + off + vec2(0.0, -0.0020)).rgb;",
-    "  f /= 5.0;",
-    "  float fl = dot(f, vec3(0.299, 0.587, 0.114));",
-    "  vec3 filmed = mix(f, vec3(fl), 0.62);",
-    // Condensation, not grime. The film is milk-white and sits in the highs,
-    // so the whole frame reads as clean air until the cloth goes through it
-    // and the sky comes back into the paint.
-    "  filmed = mix(filmed, vec3(0.955, 0.960, 0.965), 0.56);",
-    "  filmed = filmed * 0.52 + 0.46;",
-    "  filmed += (streak - 0.5) * 0.045;",
+    // A slow band of brighter sky crossing the frame on its own, so the
+    // picture is alive before anyone reaches for it.
+    "  float sweep = sin((uv.x * 1.6 - uv.y * 0.9) * 3.1416 - uTime * 0.22);",
+    "  sweep = smoothstep(0.55, 1.0, sweep) * 0.045;",
 
-    // The clean pass. Contrast and saturation back up, and the highlights
-    // allowed to wet out the way fresh sealant does under ramp lights.
     "  vec3 c = texture2D(uTex, uv).rgb;",
-    "  c = (c - 0.5) * 1.14 + 0.5;",
-    "  float cl = dot(c, vec3(0.299, 0.587, 0.114));",
-    // A light hand here. Push saturation much past this and the blue hour
-    // sky inside the clean patch turns electric cyan, which reads as a
-    // filter rather than as clean paint.
-    "  c = mix(vec3(cl), c, 1.09);",
-    "  c += vec3(0.035, 0.020, 0.0) * (1.0 - cl);",
-    "  c += pow(max(cl - 0.74, 0.0), 1.6) * 0.45;",
+    "  float lum = dot(c, vec3(0.299, 0.587, 0.114));",
 
-    "  vec3 col = mix(filmed, c, clean);",
+    // Where the light lands: a little more exposure, a little more depth,
+    // highlights allowed to glint, and the warmth of low sun in the highs.
+    "  vec3 lit = c * (1.0 + 0.10 * glow);",
+    "  lit = (lit - 0.5) * (1.0 + 0.10 * glow) + 0.5;",
+    "  lit = mix(vec3(dot(lit, vec3(0.299, 0.587, 0.114))), lit, 1.0 + 0.08 * glow);",
+    "  lit += pow(max(lum - 0.70, 0.0), 1.5) * 0.35 * glow;",
+    "  lit += vec3(0.10, 0.06, 0.0) * glow * lum * lum;",
 
-    // The boundary: a champagne rim and a whisper of prism, only where the
-    // two states actually meet.
-    // Cubed, so only the thin middle of the transition band gets it. Left
-    // linear the fringe spreads across the whole falloff and the jet ends up
-    // wearing a cyan halo.
-    "  float edge = pow(clean * (1.0 - clean) * 4.0, 3.0);",
-    "  if (edge > 0.01) {",
-    "    vec2 n = normalize(d2 + 1e-5) * 0.0007 * edge;",
-    "    col.r = mix(col.r, texture2D(uTex, uv + n).r, edge * 0.18);",
-    "    col.b = mix(col.b, texture2D(uTex, uv - n).b, edge * 0.18);",
-    "    col += vec3(0.69, 0.55, 0.34) * edge * 0.16;",
-    "  }",
-
-    "  gl_FragColor = vec4(col, 1.0);",
+    "  vec3 col = lit + sweep * (0.6 + 0.4 * lum);",
+    "  gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);",
     "}"
   ].join("\n");
 
@@ -193,19 +152,15 @@
     };
     gl.uniform1i(u.tex, 0);
     gl.uniform2f(u.img, img.naturalWidth || 1600, img.naturalHeight || 686);
-    gl.uniform1f(u.radius, 0.30);
+    gl.uniform1f(u.radius, 0.62);
 
-    // On a tall, narrow window cover-fit throws most of the frame away. Aim
-    // what is left at the nose rather than the middle of the file, so a phone
-    // gets an aircraft instead of a slice of fuselage.
-    // The nose sits dead centre of the photograph. Zoomed a little and aimed
-    // left of centre, the frame shows the left of the file - wing and sky
-    // under the copy - and the aircraft lands about two thirds across, clear
-    // of the headline. A phone keeps the whole nose and crops the sides.
+    // On a tall, narrow window cover-fit throws most of the frame away. The
+    // aircraft sits right of centre in the file, so the portrait crop is
+    // aimed there and a phone gets the nose and cabin rather than empty sky.
     function focus() {
       var portrait = window.innerWidth < window.innerHeight;
       gl.uniform1f(u.zoom, 1.0);
-      gl.uniform2f(u.focus, portrait ? 0.455 : 0.5, portrait ? 0.46 : 0.5);
+      gl.uniform2f(u.focus, portrait ? 0.62 : 0.5, 0.5);
     }
     focus();
 
