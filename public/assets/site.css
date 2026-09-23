@@ -6,10 +6,10 @@
 
 :root {
   /* materials */
-  --ground: #fbfbfd;
+  --ground: #ffffff;
   --surface: #ffffff;
-  --surface-2: #f5f5f7;
-  --surface-3: #ececed;
+  --surface-2: #f4f6f8;
+  --surface-3: #e9edf1;
   --ink: #1d1d1f;
   --ink-2: #424245;
   --ink-3: #6e6e73;
@@ -47,54 +47,10 @@
   --gutter: clamp(20px, 5vw, 44px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --ground: #000000;
-    --surface: #1c1c1e;
-    --surface-2: #161618;
-    --surface-3: #2c2c2e;
-    --ink: #f5f5f7;
-    --ink-2: #c7c7cc;
-    --ink-3: #8e8e93;
-    --line: rgba(255, 255, 255, 0.13);
-    --line-soft: rgba(255, 255, 255, 0.07);
-    --accent: #ffffff;
-    --accent-ink: #000000;
-    --accent-soft: #1d2a3d;
-    --link: #58a6ff;
-    --taxi: #C8A97E;
-    --taxi-deep: #C8A97E;
-    --ok: #46c07f;
-    --warn: #ff9f7a;
-    --glass: rgba(20, 20, 22, 0.66);
-    --glass-line: rgba(255, 255, 255, 0.10);
-    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px -12px rgba(0, 0, 0, 0.8);
-    --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.5), 0 22px 60px -24px rgba(0, 0, 0, 0.9);
-  }
-}
-:root[data-theme="dark"] {
-  --ground: #000000;
-  --surface: #1c1c1e;
-  --surface-2: #161618;
-  --surface-3: #2c2c2e;
-  --ink: #f5f5f7;
-  --ink-2: #c7c7cc;
-  --ink-3: #8e8e93;
-  --line: rgba(255, 255, 255, 0.13);
-  --line-soft: rgba(255, 255, 255, 0.07);
-  --accent: #ffffff;
-  --accent-ink: #000000;
-  --accent-soft: #1d2a3d;
-  --link: #58a6ff;
-  --taxi: #C8A97E;
-  --taxi-deep: #C8A97E;
-  --ok: #46c07f;
-  --warn: #ff9f7a;
-  --glass: rgba(20, 20, 22, 0.66);
-  --glass-line: rgba(255, 255, 255, 0.10);
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px -12px rgba(0, 0, 0, 0.8);
-  --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.5), 0 22px 60px -24px rgba(0, 0, 0, 0.9);
-}
+/* One theme. A company that sells clean does not get shown in black, however
+   the visitor's phone is set. Dark mode was removed on purpose; if it ever
+   comes back it should be an opt-in, not something the OS decides. */
+:root { color-scheme: light; }
 
 * { box-sizing: border-box; }
 /* ---------- the display face ----------
@@ -354,21 +310,13 @@ section[id], figure[id] { scroll-margin-top: 66px; }
 }
 /* On a dark ground a flat fill has no edge. The inset highlight is the lit
    top lip of a real surface, which is what separates the card from the page. */
-:root[data-theme="dark"] .menu li,
-:root:not([data-theme="light"]) .menu li {
-  box-shadow: var(--shadow-1), inset 0 1px 0 rgba(255, 255, 255, 0.055);
-}
 @media (hover: hover) {
   .menu li:hover {
     transform: translate3d(0, -4px, 0);
     box-shadow: var(--shadow-2);
     border-color: color-mix(in srgb, var(--taxi) 34%, var(--line-soft));
   }
-  :root[data-theme="dark"] .menu li:hover,
-  :root:not([data-theme="light"]) .menu li:hover {
-    box-shadow: var(--shadow-2), inset 0 1px 0 rgba(255, 255, 255, 0.09);
-  }
-}
+    }
 .menu li.is-pressed { transform: translate3d(0, -1px, 0) scale(0.992); transition-duration: 120ms; }
 
 /* A specular highlight that follows the pointer across the card. */
@@ -539,10 +487,6 @@ label:has(input:checked) > .tickbox {
   background: var(--taxi-deep); border-color: var(--taxi-deep); transform: scale(1.04);
 }
 label:has(input:checked) > .tickbox path { stroke: #fff; stroke-dashoffset: 0; transition-delay: 60ms; }
-:root[data-theme="dark"] label:has(input:checked) > .tickbox,
-:root:not([data-theme="light"]) label:has(input:checked) > .tickbox { background: var(--taxi); border-color: var(--taxi); }
-:root[data-theme="dark"] label:has(input:checked) > .tickbox path,
-:root:not([data-theme="light"]) label:has(input:checked) > .tickbox path { stroke: #14283F; }
 
 /* No :has() - the tick still draws, the row just does not tint. */
 @supports not selector(:has(*)) {
@@ -578,6 +522,87 @@ label:has(input:checked) > .tickbox path { stroke: #fff; stroke-dashoffset: 0; t
 .formstatus { margin-top: 14px; font-size: 0.93rem; min-height: 1.4em; }
 .formstatus.ok { color: var(--ok); font-weight: 600; }
 .formstatus.err { color: var(--warn); font-weight: 600; }
+
+
+/* ---------- the standard: nine rules, each with the reason ---------- */
+.rules {
+  list-style: none; margin: 0; padding: 0; counter-reset: rule;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(12px, 1.6vw, 18px);
+}
+.rules li {
+  counter-increment: rule;
+  position: relative;
+  display: grid; grid-template-rows: auto auto 1fr; gap: 10px;
+  padding: clamp(22px, 2.4vw, 28px);
+  padding-top: clamp(30px, 3vw, 36px);
+  border-radius: var(--r-xl);
+  background: var(--surface); border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow-1);
+}
+.rules li::before {
+  content: counter(rule, decimal-leading-zero);
+  position: absolute; top: 18px; right: 22px;
+  font-family: var(--display); font-size: 1.15rem; color: var(--taxi-deep);
+  letter-spacing: 0.02em;
+}
+.rules h3 { font-size: 1.1rem; letter-spacing: -0.014em; padding-right: 40px; }
+.rules p { color: var(--ink-2); font-size: 0.94rem; line-height: 1.5; }
+.rules__why {
+  align-self: end;
+  padding-top: 12px; border-top: 1px solid var(--line-soft);
+  font-family: var(--display); font-style: italic;
+  font-size: 1.02rem; line-height: 1.35; color: var(--ink-3);
+}
+@media (max-width: 1000px) { .rules { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .rules { grid-template-columns: 1fr; } }
+
+/* ---------- what touches what ---------- */
+.manifest {
+  margin-top: clamp(28px, 4vw, 44px);
+  border-radius: var(--r-xl); background: var(--surface);
+  border: 1px solid var(--line-soft); box-shadow: var(--shadow-1);
+  padding: clamp(20px, 2.6vw, 30px); overflow: hidden;
+}
+.manifest h3 { margin-bottom: 14px; }
+.manifest table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.manifest th, .manifest td { text-align: left; vertical-align: top; padding: 12px 14px 12px 0; border-top: 1px solid var(--line-soft); }
+.manifest thead th { border-top: 0; padding-top: 0; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-3); }
+.manifest tbody th { font-weight: 600; color: var(--ink); white-space: nowrap; padding-right: 22px; }
+.manifest td { color: var(--ink-2); }
+.manifest td:last-child { color: var(--ink-3); }
+.manifest .small { margin-top: 12px; }
+@media (max-width: 760px) {
+  .manifest table, .manifest thead, .manifest tbody, .manifest tr, .manifest th, .manifest td { display: block; }
+  .manifest thead { display: none; }
+  .manifest tr { padding: 12px 0; border-top: 1px solid var(--line-soft); }
+  .manifest th, .manifest td { border: 0; padding: 2px 0; white-space: normal; }
+  .manifest tbody th { padding-bottom: 4px; }
+}
+
+/* ---------- the vendor packet ---------- */
+.packet {
+  margin-top: clamp(16px, 2vw, 22px);
+  display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 2fr); gap: clamp(20px, 4vw, 48px);
+  padding: clamp(22px, 2.8vw, 34px);
+  border-radius: var(--r-xl);
+  background: var(--accent); color: #fff;
+  box-shadow: var(--shadow-2);
+}
+.packet__head .eyebrow { color: var(--taxi); }
+.packet__head h3 { color: #fff; font-family: var(--display); font-weight: 400; font-size: clamp(1.5rem, 2.4vw, 2rem); line-height: 1.1; letter-spacing: -0.01em; margin-top: 8px; }
+.packet__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.packet__list li { display: grid; grid-template-columns: minmax(0, 0.55fr) minmax(0, 1.45fr); gap: 6px 20px; padding: 13px 0; border-top: 1px solid rgba(255, 255, 255, 0.12); }
+.packet__list li:first-child { border-top: 0; padding-top: 0; }
+.packet__list strong { font-weight: 600; letter-spacing: -0.008em; }
+.packet__list strong a { color: #fff; text-decoration: underline; text-decoration-color: var(--taxi); text-decoration-thickness: 1.5px; text-underline-offset: 4px; transition: text-decoration-color 180ms ease, color 180ms ease; }
+.packet__list strong a:hover { color: var(--taxi); }
+.packet__list strong a:focus-visible { outline: 2px solid var(--taxi); outline-offset: 3px; border-radius: 3px; }
+.packet__list span { color: rgba(255, 255, 255, 0.76); font-size: 0.93rem; line-height: 1.5; }
+@media (max-width: 860px) {
+  .packet { grid-template-columns: 1fr; }
+  .packet__list li { grid-template-columns: 1fr; gap: 3px; }
+}
 
 /* ---------- faq ---------- */
 .faq { display: grid; gap: 0; max-width: 60rem; border-radius: var(--r-lg); border: 1px solid var(--line-soft); background: var(--surface); overflow: hidden; }
@@ -634,9 +659,9 @@ label:has(input:checked) > .tickbox path { stroke: #fff; stroke-dashoffset: 0; t
   position: relative;
   min-height: min(92svh, 860px);
   display: grid;
-  align-items: end;
+  align-items: center;
   overflow: hidden;
-  background: var(--accent);
+  background: #eef1f4;
   isolation: isolate;
 }
 .hero__canvas,
@@ -652,45 +677,42 @@ label:has(input:checked) > .tickbox path { stroke: #fff; stroke-dashoffset: 0; t
    this is what people see, and the veil below still carries the type. */
 .hero__stage.is-shaded .hero__img { opacity: 0; transition: opacity 700ms ease; }
 
-/* Always present, shader or no shader. */
+/* Always present, shader or no shader. White, because the whole point is
+   that the frame reads as clean air; the copy sits on a soft bank of it. */
 .hero__veil {
   position: absolute; inset: 0; z-index: 2; pointer-events: none;
   background:
-    linear-gradient(to right, color-mix(in srgb, var(--accent) 80%, #000) 0%,
-                              color-mix(in srgb, var(--accent) 46%, transparent) 40%,
-                              color-mix(in srgb, var(--accent) 12%, transparent) 62%,
-                              transparent 78%),
-    linear-gradient(to top, color-mix(in srgb, var(--accent) 88%, #000) 0%,
-                            color-mix(in srgb, var(--accent) 52%, transparent) 32%,
-                            transparent 60%),
-    linear-gradient(to bottom, color-mix(in srgb, var(--accent) 55%, transparent) 0%,
-                               transparent 28%);
+    linear-gradient(to right, rgba(255, 255, 255, 0.94) 0%,
+                              rgba(255, 255, 255, 0.86) 38%,
+                              rgba(255, 255, 255, 0.62) 58%,
+                              rgba(255, 255, 255, 0.28) 70%,
+                              rgba(255, 255, 255, 0) 84%),
+    linear-gradient(to top, rgba(255, 255, 255, 0.55) 0%,
+                            rgba(255, 255, 255, 0) 26%),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.34) 0%,
+                               rgba(255, 255, 255, 0) 22%);
 }
 
 .hero__copy {
   position: relative; z-index: 3;
   width: 100%;
-  padding-block: clamp(64px, 9vw, 108px) clamp(40px, 6vw, 72px);
+  padding-block: clamp(84px, 11vw, 132px) clamp(48px, 7vw, 84px);
   display: grid; gap: clamp(16px, 2vw, 22px);
   justify-items: start;
-  color: #fff;
+  color: var(--ink);
 }
-.hero__copy .eyebrow { color: rgba(255, 255, 255, 0.72); }
-.hero__copy .eyebrow span { color: var(--taxi); }
+.hero__copy .eyebrow { color: var(--ink-3); }
+.hero__copy .eyebrow span { color: var(--taxi-deep); }
 .hero__copy h1 {
-  color: #fff;
-  max-width: 13ch;
+  color: var(--accent);
+  max-width: 11ch;
   font-size: clamp(3rem, 7.4vw, 6.4rem);
   line-height: 0.96;
   letter-spacing: -0.015em;
   text-wrap: balance;
 }
-.hero__copy .lede { color: rgba(255, 255, 255, 0.8); max-width: 42ch; }
+.hero__copy .lede { color: var(--ink-2); max-width: 42ch; }
 .hero__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; }
-.hero .btn { background: #fff; color: var(--accent); }
-.hero .btn:hover { background: color-mix(in srgb, #fff 90%, var(--taxi)); }
-.hero .textlink { color: #fff; }
-.hero .textlink::after { background: rgba(255, 255, 255, 0.5); }
 
 /* A line of instruction, once, then it gets out of the way. */
 .hero__hint {
@@ -698,7 +720,7 @@ label:has(input:checked) > .tickbox path { stroke: #fff; stroke-dashoffset: 0; t
   right: clamp(16px, 3vw, 38px); top: clamp(76px, 9vw, 104px);
   margin: 0;
   font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--ink-3);
   opacity: 0; transition: opacity 900ms ease;
 }
 .hero__stage.is-shaded .hero__hint { opacity: 1; }
@@ -708,11 +730,22 @@ label:has(input:checked) > .tickbox path { stroke: #fff; stroke-dashoffset: 0; t
   width: 100%; max-width: none; margin: 0;
   border-radius: 0; border: 0; box-shadow: none;
   background: var(--surface);
+  border-top: 1px solid var(--line-soft);
   border-bottom: 1px solid var(--line-soft);
 }
 
-@media (max-width: 720px) {
-  .hero__stage { min-height: min(78svh, 620px); }
+/* A phone stacks it: the photograph and its clean patch in a band up top,
+   the copy on white underneath. Nothing has to be read through the picture.
+   Same for a portrait tablet, where the nav has already folded away. */
+@media (max-width: 860px) {
+  .hero__stage { --band: min(46svh, 440px); min-height: 0; display: block; background: var(--ground); }
+  .hero__canvas, .hero__img, .hero__veil { inset: 0 0 auto 0; height: var(--band); }
+  .hero__veil {
+    background:
+      linear-gradient(to top, #fff 0%, rgba(255, 255, 255, 0.62) 12%, rgba(255, 255, 255, 0) 32%),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 30%);
+  }
+  .hero__copy { margin-top: var(--band); padding-block: 4px 40px; }
   .hero__copy h1 { max-width: 100%; }
   .hero__hint { display: none; }
 }
@@ -769,17 +802,14 @@ label:has(input:checked) > .tickbox path { stroke: #fff; stroke-dashoffset: 0; t
   border-bottom-color: transparent;
   box-shadow: none;
 }
-.topbar--over:not(.is-stuck) .brand,
-.topbar--over:not(.is-stuck) .nav a { color: #fff; }
-.topbar--over:not(.is-stuck) .nav a:hover { color: #fff; }
 .topbar--over:not(.is-stuck) .btn--small {
   background: transparent;
-  color: #fff;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 38%, transparent);
 }
 .topbar--over:not(.is-stuck) .btn--small:hover {
-  background: rgba(255, 255, 255, 0.14);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 62%, transparent);
 }
 .topbar--over .brand, .topbar--over .nav a, .topbar--over .btn--small {
   transition: color 260ms ease, background-color 260ms ease, box-shadow 260ms ease;
@@ -802,7 +832,7 @@ label:has(input:checked) > .tickbox path { stroke: #fff; stroke-dashoffset: 0; t
 }
 .cursor.is-on { opacity: 1; }
 .cursor.is-link { width: 46px; height: 46px; margin: -23px 0 0 -23px; background: color-mix(in srgb, var(--ink) 8%, transparent); }
-.cursor.is-stage { width: 74px; height: 74px; margin: -37px 0 0 -37px; border-color: rgba(255, 255, 255, 0.55); }
+.cursor.is-stage { width: 74px; height: 74px; margin: -37px 0 0 -37px; border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
 @media (hover: none), (pointer: coarse) { .cursor { display: none; } }
 
 /* ---------- grain ---------- */
@@ -810,7 +840,7 @@ label:has(input:checked) > .tickbox path { stroke: #fff; stroke-dashoffset: 0; t
    plastic off the flat fills without anyone noticing it is there. */
 .grain {
   position: fixed; inset: 0; z-index: 80; pointer-events: none;
-  opacity: 0.4; mix-blend-mode: multiply;
+  opacity: 0.14; mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.28'/%3E%3C/svg%3E");
 }
 
@@ -968,7 +998,7 @@ label:has(input:checked) > .tickbox path { stroke: #fff; stroke-dashoffset: 0; t
   .topbar { background: var(--ground); -webkit-backdrop-filter: none; backdrop-filter: none; border-bottom-color: var(--line); }
   .report { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
   .corner__pill { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
-  .topbar--over:not(.is-stuck) { background: color-mix(in srgb, var(--accent) 88%, #000); border-bottom-color: var(--glass-line); }
+  .topbar--over:not(.is-stuck) { background: rgba(255, 255, 255, 0.92); border-bottom-color: var(--glass-line); }
 }
 @media (prefers-contrast: more) {
   :root { --line: rgba(0, 0, 0, 0.38); --line-soft: rgba(0, 0, 0, 0.26); --ink-2: #2b2b2e; --ink-3: #4a4a4f; }
@@ -976,9 +1006,9 @@ label:has(input:checked) > .tickbox path { stroke: #fff; stroke-dashoffset: 0; t
   .report { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
   .menu li, .panel, .who > div, .never, .facts, .tablewrap, .faq { border-color: var(--line); }
   .grain { display: none; }
-  .hero__veil { background: linear-gradient(to top, #000 0%, color-mix(in srgb, #000 74%, transparent) 46%, color-mix(in srgb, #000 34%, transparent) 100%); }
-  .hero__copy .lede { color: #fff; }
-  .topbar--over:not(.is-stuck) { background: #000; }
+  .hero__veil { background: linear-gradient(to right, #fff 0%, #fff 55%, rgba(255, 255, 255, 0.7) 100%); }
+  .hero__copy .lede { color: var(--ink); }
+  .topbar--over:not(.is-stuck) { background: #fff; }
 }
 @media print {
   .topbar, .hero__actions, .quote, .classpick, .cursor, .grain, .corner, .hero__canvas, .hero__hint { display: none; }
