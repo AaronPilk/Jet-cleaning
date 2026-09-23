@@ -62,26 +62,6 @@
     this.raf = requestAnimationFrame(tick);
   };
 
-  // ---------- segmented control: X and width are independent springs
-  function segmentedThumb(root) {
-    var thumb = root.querySelector(".classpick__thumb");
-    if (!thumb) return function () {};
-    var x = new Spring(0, { damping: 1, response: 0.34, onFrame: paint });
-    var w = new Spring(0, { damping: 1, response: 0.34, onFrame: paint });
-    function paint() {
-      thumb.style.transform = "translate3d(" + x.v.toFixed(2) + "px,0,0)";
-      thumb.style.width = Math.max(0, w.v).toFixed(2) + "px";
-    }
-    var first = true;
-    return function move(btn) {
-      if (!btn) return;
-      var tx = btn.offsetLeft - root.clientLeft;
-      var tw = btn.offsetWidth;
-      if (first) { x.snap(tx); w.snap(tw); thumb.classList.add("is-ready"); first = false; return; }
-      x.set(tx); w.set(tw);
-    };
-  }
-
   // ---------- a number that springs to its new value
   function springNumber(el, format) {
     var shown = null, suffix = "";
@@ -111,61 +91,320 @@
   var totalEl = $("est-total");
   var setTotal = totalEl ? springNumber(totalEl, fmt) : function () {};
 
-  // ---------- class picker (services + programs)
-  var picker = $("classpick");
+  // ============================================================
+  // Aircraft picker
+  //
+  // A vertical list of aircraft sizes, each drawn to scale; a finder for
+  // people who know their model but not our size names; and a price panel
+  // that follows whichever was chosen. The estimator further down is kept in
+  // step, both ways, so nobody picks their aircraft twice.
+  // ============================================================
+  var fleet = $("fleet");
   var pickCls = P.defaultClass;
+  var pickModel = null;
+  var AC = P.aircraft || {};
+  var qModel = $("q-model");
+  var syncing = false;
 
-  var moveThumb = picker ? segmentedThumb(picker) : function () {};
+  var modelCls = {};
+  (P.models || []).forEach(function (m) { modelCls[m[0]] = m[1]; });
 
-  function renderPicker() {
-    if (!picker) return;
-    var active = null;
-    Array.prototype.forEach.call(picker.querySelectorAll("button[data-cls]"), function (b) {
+  var article = function (w) { return /^[aeiou]/i.test(w) ? "an" : "a"; };
+  var classLabel = function (c) { return P.classes[c] ? P.classes[c].label : "Custom quote"; };
+
+  // prices glide to their new values instead of snapping
+  var priceEls = Array.prototype.map.call(document.querySelectorAll("#menu [data-price]"), function (el) {
+    return { el: el, code: el.getAttribute("data-price"), set: springNumber(el, fmt), quoted: false };
+  });
+  var programEls = Array.prototype.map.call(document.querySelectorAll("#program-rows [data-program]"), function (el) {
+    return { el: el, key: el.getAttribute("data-program"), set: springNumber(el, fmt) };
+  });
+
+  function renderPrices() {
+    priceEls.forEach(function (p) {
+      var v = unitPrice(p.code, pickCls);
+      if (v === null) { p.el.textContent = "Quoted"; p.quoted = true; }
+      else { p.quoted = false; p.set(v); }
+    });
+    var pc = $("program-class");
+    if (pc) pc.textContent = classLabel(pickCls);
+    var pr = P.programs[pickCls];
+    programEls.forEach(function (p) {
+      var v = pr ? pr[p.key] : null;
+      if (v) p.set(v); else p.el.textContent = "Quoted";
+    });
+  }
+
+  // ---- the list
+  var list = $("fleet-list");
+  var tiles = list ? Array.prototype.slice.call(list.querySelectorAll("[data-cls]")) : [];
+
+  function renderTiles() {
+    var any = false;
+    tiles.forEach(function (b) {
       var on = b.getAttribute("data-cls") === pickCls;
       b.setAttribute("aria-checked", on ? "true" : "false");
       b.tabIndex = on ? 0 : -1;
-      if (on) active = b;
+      if (on) any = true;
     });
-    moveThumb(active);
-    var ex = $("class-examples");
-    if (ex) ex.textContent = P.classes[pickCls].examples;
+    if (!any && tiles[0]) tiles[0].tabIndex = 0;
   }
 
-  function renderMenu() {
-    Array.prototype.forEach.call(document.querySelectorAll("#menu [data-price]"), function (el) {
-      var v = unitPrice(el.getAttribute("data-price"), pickCls);
-      el.textContent = v === null ? "Quoted" : fmt(v);
-    });
-    var pc = $("program-class");
-    if (pc) pc.textContent = P.classes[pickCls].label;
-    var pr = P.programs[pickCls];
-    Array.prototype.forEach.call(document.querySelectorAll("#program-rows [data-program]"), function (el) {
-      var v = pr ? pr[el.getAttribute("data-program")] : null;
-      el.textContent = v ? fmt(v) : "Quoted";
-    });
+  // ---- the heading over the prices
+  function renderHead() {
+    var t = $("fleet-title"), s = $("fleet-sub");
+    if (!t || !s) return;
+    var label = classLabel(pickCls);
+    if (pickModel) {
+      t.textContent = pickModel;
+      s.textContent = pickCls === "Q"
+        ? "Larger than anything on our list. We price it by hand after a walkaround."
+        : "Priced as " + article(label) + " " + label.toLowerCase() + ".";
+    } else {
+      t.textContent = label;
+      s.textContent = P.classes[pickCls] ? "Typical in this size: " + P.classes[pickCls].typical + "." : "";
+    }
   }
 
-  if (picker) {
-    picker.addEventListener("click", function (e) {
-      var b = e.target.closest("button[data-cls]");
-      if (!b) return;
-      pickCls = b.getAttribute("data-cls");
-      renderPicker();
-      renderMenu();
+  // ---- the drawing: two layers cross-fade while one width spring carries
+  // the size change, so a light jet grows into a large cabin rather than
+  // being swapped for it.
+  var craft = fleet ? fleet.querySelector(".fleet__craft") : null;
+  var arts = craft ? craft.querySelectorAll(".fleet__art") : [];
+  var front = 0;
+  var widthSpring = craft ? new Spring(AC[pickCls] ? AC[pickCls].pct : 50, {
+    damping: 1, response: 0.46,
+    onFrame: function (v) { craft.style.width = v.toFixed(2) + "%"; }
+  }) : null;
+  if (widthSpring && AC[pickCls]) widthSpring.snap(AC[pickCls].pct);
+
+  function drawCraft(cls) {
+    if (!craft || arts.length < 2) return;
+    var key = AC[cls] ? cls : "C6";
+    var m = AC[key];
+    var cur = arts[front];
+    if (cur.getAttribute("data-cls") !== key) {
+      var nxt = arts[1 - front];
+      nxt.setAttribute("viewBox", m.box);
+      nxt.setAttribute("data-cls", key);
+      var use = nxt.querySelector("use");
+      if (use) use.setAttribute("href", "#acx-" + key);
+      nxt.classList.add("is-front");
+      cur.classList.remove("is-front");
+      front = 1 - front;
+    }
+    craft.classList.toggle("is-custom", cls === "Q");
+    widthSpring.set(m.pct);
+  }
+
+  // ---- keep the estimator on the same aircraft
+  function syncEstimator() {
+    if (!qModel) return;
+    var want = null;
+    if (pickModel && modelCls[pickModel]) want = pickModel;
+    else if (modelCls[qModel.value] !== pickCls && P.classes[pickCls]) want = P.classes[pickCls].rep;
+    if (!want || want === qModel.value) return;
+    qModel.value = want;
+    syncing = true;
+    qModel.dispatchEvent(new Event("change", { bubbles: true }));
+    syncing = false;
+  }
+
+  function select(cls, model, opts) {
+    opts = opts || {};
+    pickCls = cls;
+    pickModel = model || null;
+    renderTiles();
+    renderHead();
+    renderPrices();
+    drawCraft(cls);
+    if (!opts.fromEstimator) syncEstimator();
+    if (!opts.keepQuery && finder.input) {
+      finder.input.value = pickModel || "";
+      finder.toggleClear();
+    }
+  }
+
+  if (list) {
+    list.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-cls]");
+      if (b) select(b.getAttribute("data-cls"), null);
     });
-    picker.addEventListener("keydown", function (e) {
-      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
-      var btns = Array.prototype.slice.call(picker.querySelectorAll("button[data-cls]"));
-      var i = btns.findIndex(function (b) { return b.getAttribute("data-cls") === pickCls; });
-      i = (i + (e.key === "ArrowRight" ? 1 : -1) + btns.length) % btns.length;
-      pickCls = btns[i].getAttribute("data-cls");
-      renderPicker();
-      renderMenu();
-      btns[i].focus();
+    // A radio group: arrows move the choice, Home and End jump to the ends.
+    list.addEventListener("keydown", function (e) {
+      var keys = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 };
+      var i = tiles.findIndex(function (b) { return b.getAttribute("data-cls") === pickCls; });
+      var j;
+      if (e.key in keys) j = ((i < 0 ? 0 : i) + keys[e.key] + tiles.length) % tiles.length;
+      else if (e.key === "Home") j = 0;
+      else if (e.key === "End") j = tiles.length - 1;
+      else return;
       e.preventDefault();
+      select(tiles[j].getAttribute("data-cls"), null);
+      tiles[j].focus();
     });
-    renderPicker();
-    renderMenu();
+  }
+
+  if (qModel) {
+    qModel.addEventListener("change", function () {
+      if (syncing) return;
+      var c = modelCls[qModel.value];
+      if (c) select(c, qModel.value, { fromEstimator: true });
+    });
+  }
+
+  // ---- the finder: a combobox over every model we price
+  var finder = (function () {
+    var input = $("finder-input"), pop = $("finder-list");
+    var clear = fleet ? fleet.querySelector(".finder__clear") : null;
+    var api = { input: input, toggleClear: function () { if (clear) clear.hidden = !(input && input.value); } };
+    if (!input || !pop) return api;
+
+    var norm = function (s) { return s.toLowerCase().replace(/[‐-―-]/g, "").replace(/[^a-z0-9]+/g, " ").trim(); };
+    var index = (P.models || []).filter(function (m) { return !/^other/i.test(m[0]); }).map(function (m, i) {
+      var toks = norm(m[0]).split(" ").filter(Boolean);
+      toks.slice().forEach(function (t) {
+        var g = /^[a-z]{1,2}(\d{2,4}[a-z]*)$/.exec(t);
+        if (g) toks.push(g[1]);
+      });
+      return { name: m[0], cls: m[1], toks: toks, i: i };
+    });
+
+    function search(q) {
+      var qt = norm(q).split(" ").filter(Boolean);
+      if (!qt.length) return [];
+      var out = [];
+      index.forEach(function (it) {
+        var score = 0;
+        for (var k = 0; k < qt.length; k++) {
+          var best = 0;
+          for (var j = 0; j < it.toks.length; j++) {
+            var t = it.toks[j];
+            if (t === qt[k]) best = Math.max(best, 3);
+            else if (t.indexOf(qt[k]) === 0) best = Math.max(best, 2);
+            else if (qt[k].length > 2 && t.indexOf(qt[k]) > 0) best = Math.max(best, 1);
+          }
+          if (!best) return;
+          score += best;
+        }
+        out.push({ it: it, score: score });
+      });
+      out.sort(function (a, b) { return b.score - a.score || a.it.i - b.it.i; });
+      return out.slice(0, 7).map(function (o) { return o.it; });
+    }
+
+    var items = [], active = -1;
+
+    function highlight(el, name, q) {
+      var parts = q.trim().split(/\s+/).filter(Boolean).map(function (s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); });
+      if (!parts.length) { el.textContent = name; return; }
+      var re = new RegExp("(" + parts.join("|") + ")", "ig");
+      name.split(re).forEach(function (chunk, i) {
+        if (!chunk) return;
+        if (i % 2) { var m = document.createElement("mark"); m.textContent = chunk; el.appendChild(m); }
+        else el.appendChild(document.createTextNode(chunk));
+      });
+    }
+
+    function open(q) {
+      items = search(q);
+      pop.innerHTML = "";
+      active = -1;
+      if (!q.trim()) { close(); return; }
+      if (!items.length) {
+        var none = document.createElement("li");
+        none.className = "finder__none";
+        none.setAttribute("role", "presentation");
+        none.textContent = "Not on our list. Pick the closest size below, or send it in the estimate and we'll price it by hand.";
+        pop.appendChild(none);
+      }
+      items.forEach(function (it, i) {
+        var li = document.createElement("li");
+        li.id = "finder-opt-" + i;
+        li.setAttribute("role", "option");
+        li.setAttribute("aria-selected", "false");
+        var nm = document.createElement("span");
+        nm.className = "finder__model";
+        highlight(nm, it.name, q);
+        var cl = document.createElement("span");
+        cl.className = "finder__cls";
+        cl.textContent = it.cls === "Q" ? "Quoted by hand" : classLabel(it.cls);
+        li.appendChild(nm);
+        li.appendChild(cl);
+        // pointerdown, not click: keep focus in the field and answer on press
+        li.addEventListener("pointerdown", function (e) { e.preventDefault(); pick(it); });
+        pop.appendChild(li);
+      });
+      pop.hidden = false;
+      input.setAttribute("aria-expanded", "true");
+    }
+
+    function close() {
+      pop.hidden = true;
+      input.setAttribute("aria-expanded", "false");
+      input.removeAttribute("aria-activedescendant");
+      active = -1;
+    }
+
+    function move(d) {
+      if (!items.length) return;
+      active = (active + d + items.length) % items.length;
+      Array.prototype.forEach.call(pop.querySelectorAll("[role=option]"), function (li, i) {
+        li.setAttribute("aria-selected", i === active ? "true" : "false");
+        if (i === active) li.scrollIntoView({ block: "nearest" });
+      });
+      input.setAttribute("aria-activedescendant", "finder-opt-" + active);
+    }
+
+    // On a phone the prices sit below eight tiles. Someone who typed their
+    // model wants the answer, so take them to it (tiles don't do this: people
+    // tap through those to compare).
+    var stacked = window.matchMedia && window.matchMedia("(max-width: 980px)");
+    function reveal() {
+      var panel = fleet && fleet.querySelector(".fleet__panel");
+      if (!panel || !stacked || !stacked.matches) return;
+      var top = panel.getBoundingClientRect().top;
+      if (top > 0 && top < window.innerHeight * 0.55) return;
+      input.blur();
+      panel.scrollIntoView({ block: "start", behavior: reduce && reduce.matches ? "auto" : "smooth" });
+    }
+
+    function pick(it) {
+      close();
+      select(it.cls, it.name, { keepQuery: true });
+      input.value = it.name;
+      api.toggleClear();
+      reveal();
+    }
+
+    input.addEventListener("input", function () { api.toggleClear(); open(input.value); });
+    input.addEventListener("focus", function () { if (input.value && input.value !== pickModel) open(input.value); });
+    input.addEventListener("blur", function () { setTimeout(close, 120); });
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowDown") { e.preventDefault(); if (pop.hidden) open(input.value); move(1); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); move(-1); }
+      else if (e.key === "Enter") {
+        if (!pop.hidden && items.length) { e.preventDefault(); pick(items[active < 0 ? 0 : active]); }
+      } else if (e.key === "Escape") {
+        if (!pop.hidden) { e.preventDefault(); close(); }
+        else if (input.value) { e.preventDefault(); input.value = ""; api.toggleClear(); if (pickModel) select(pickCls, null); }
+      }
+    });
+    if (clear) {
+      clear.addEventListener("click", function () {
+        input.value = "";
+        api.toggleClear();
+        if (pickModel) select(pickCls, null);
+        input.focus();
+      });
+    }
+    return api;
+  })();
+
+  if (fleet) {
+    renderTiles();
+    renderHead();
+    renderPrices();
   }
 
   // ---------- estimator
@@ -405,7 +644,7 @@
       .catch(function () {
         setState(null);
         status.className = "formstatus err";
-        status.textContent = "That didn't go through. Email hello@nextlegdetail.com and we'll take it from there.";
+        status.textContent = "That didn't go through. Call (704) 877-3511 or email hello@nextlegdetail.com and we'll take it from there.";
       })
       .then(function () { if (!btn.classList.contains("is-done")) setState(null); });
   });
@@ -644,7 +883,7 @@
 
   // Respond on press, not on release. Cancel if the finger slides away.
   document.addEventListener("pointerdown", function (e) {
-    var b = e.target.closest ? e.target.closest(".btn, .menu li, .svc label") : null;
+    var b = e.target.closest ? e.target.closest(".btn, .menu li, .svc label, .fleet__opt") : null;
     if (!b) return;
     b.classList.add("is-pressed");
     var clear = function () { b.classList.remove("is-pressed"); };
@@ -653,9 +892,4 @@
     b.addEventListener("pointerleave", clear, { once: true });
   }, { passive: true });
 
-  // Keep the segmented thumb honest when the row reflows.
-  var relayout = function () { if (picker) renderPicker(); };
-  window.addEventListener("resize", relayout);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(relayout);
-  window.addEventListener("load", relayout);
 })();

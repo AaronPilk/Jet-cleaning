@@ -1,3 +1,23 @@
+# Next Leg Aircraft Detailing
+# Search engines and AI assistants are welcome to read and cite this site.
+
 User-agent: *
 Allow: /
+Disallow: /api/
+
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot
+User-agent: Applebot-Extended
+User-agent: Bingbot
+Allow: /
+Disallow: /api/
+
 Sitemap: https://nextlegdetail.com/sitemap.xml

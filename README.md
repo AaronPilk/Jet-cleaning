@@ -1,6 +1,8 @@
 # Next Leg Aircraft Detailing — website
 
-Static marketing site with an instant estimate calculator, deployed on **Cloudflare Pages**.
+The live site is **https://nextlegdetail.com**, served from Vercel. This repo is the same site in Cloudflare Pages form, kept in step with it, so you can move hosts at any time without rebuilding anything.
+
+Pages: home, `/pricing`, `/aircraft-detailing` plus six area pages, four service pages under `/services/`, `/privacy`. Cloudflare serves `pricing.html` at `/pricing` on its own. The `*.pages.dev` copies send `noindex`, so search engines only ever see nextlegdetail.com.
 
 ```
 wrangler.toml          Pages config — declares public/ as the output directory
@@ -36,8 +38,7 @@ Live logs: `npx wrangler pages deployment tail --project-name jet-cleaning`
 
 ## Custom domain
 
-Pages project → **Custom domains** → add `nextlegdetail.com`, then `www.nextlegdetail.com`.
-Cloudflare handles DNS and the certificate once the domain is on your account.
+`nextlegdetail.com` points at Vercel today (GoDaddy DNS: `A @ 76.76.21.21`, `CNAME www cname.vercel-dns.com`). Only move it here if you retire the Vercel project: add the domain under the Pages project → **Custom domains**, then change those two records to what Cloudflare shows.
 
 ## Run it locally
 
@@ -51,6 +52,7 @@ Serves the real Pages runtime on http://localhost:8788 — static files, `_heade
 
 ## Changing prices or copy
 
-Don't hand-edit `public/`. Every price on the page comes from `_source/pricing_data.py`
-in the launch-kit folder. Change it there, run `python3 _source/build_site.py`, and copy
-the regenerated `website/public/` over `public/` here.
+Don't hand-edit `public/`. Prices come from `_source/pricing_data.py` in the launch-kit
+folder, the inner pages from `_source/site_pages.py`, the home page from `_source/site/`.
+Ask Claude to rebuild: it regenerates `website/public/`, copies it over `public/` here and
+redeploys the live site.
